@@ -1,0 +1,9 @@
+/* src/index.css */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom utilities */
+.glass {
+  @apply backdrop-blur-md bg-white/10 border border-white/20 rounded-lg shadow-lg;
+}
