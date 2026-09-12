@@ -171,6 +171,38 @@ export interface RemnantAnalysisResponse {
   recommendations: string[];
 }
 
+export interface FabricVisualAnalysis {
+  material: string;
+  color: string;
+  pattern: string;
+  texture: string;
+  appearance: string;
+}
+
+export interface FabricProductMatch extends ProductMatch {
+  required_area_m2: number;
+  available_area_m2: number;
+  used_area_m2: number;
+  waste_percentage: number;
+  ai_recommended: boolean;
+  ai_reason?: string | null;
+  pattern_pieces: PatternPiece[];
+}
+
+export interface FabricAnalysisResponse {
+  shape: string;
+  width_cm: number;
+  length_cm: number;
+  available_area_m2: number;
+  material_type: string;
+  fabric_visual_analysis: FabricVisualAnalysis;
+  ai_available: boolean;
+  ai_message?: string | null;
+  recommended_products: FabricProductMatch[];
+  selected_product_id: string | null;
+  recommendations: string[];
+}
+
 // ─── Wizard Form State ────────────────────────────────────────────────────────
 export interface WizardFormData {
   // Step 1: Project Details

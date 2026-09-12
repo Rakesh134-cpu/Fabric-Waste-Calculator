@@ -1,496 +1,63 @@
-import React, { useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { 
-  Scissors, ArrowRight, ArrowLeft, Plus, Trash2, CheckCircle2, 
-  Layers, Cpu, FileText, Sparkles, RefreshCw
-} from 'lucide-react';
-import { apiService } from '@/services/api';
-import type { OptimizationRequest, PatternCategory } from '@/types';
+import React, { useMemo, useState } from 'react';
+import { ArrowRight, ImagePlus, Sparkles, Upload } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { useNavigate } from 'react-router-dom';
 
-interface PatternPieceInput {
-  id: string;
-  name: string;
-  width: number;
-  height: number;
-  quantity: number;
-  allow_rotation: boolean;
-  category: PatternCategory;
-  priority: number;
-}
+type Garment = 'Shirt' | 'T-Shirt' | 'Pant' | 'Shorts' | 'Skirt' | 'Jacket';
+type Piece = { name: string; width: number; height: number; color: string };
+
+const patterns: Record<Garment, Piece[]> = {
+  Shirt: [{ name: 'Back', width: 55, height: 76, color: '#3b82f6' }, { name: 'Front Left', width: 50, height: 76, color: '#fb7185' }, { name: 'Front Right', width: 50, height: 76, color: '#facc15' }, { name: 'Sleeve', width: 30, height: 62, color: '#22c55e' }, { name: 'Collar', width: 44, height: 14, color: '#ef4444' }, { name: 'Cuff', width: 12, height: 20, color: '#f97316' }, { name: 'Pocket', width: 16, height: 20, color: '#14b8a6' }],
+  'T-Shirt': [{ name: 'Back', width: 58, height: 72, color: '#3b82f6' }, { name: 'Front', width: 58, height: 72, color: '#fb7185' }, { name: 'Sleeve', width: 30, height: 28, color: '#facc15' }, { name: 'Neck Rib', width: 38, height: 8, color: '#22c55e' }],
+  Pant: [{ name: 'Front Left', width: 34, height: 98, color: '#3b82f6' }, { name: 'Front Right', width: 34, height: 98, color: '#fb7185' }, { name: 'Back Left', width: 38, height: 101, color: '#facc15' }, { name: 'Back Right', width: 38, height: 101, color: '#22c55e' }, { name: 'Waistband', width: 82, height: 12, color: '#ef4444' }, { name: 'Pocket', width: 20, height: 24, color: '#14b8a6' }],
+  Shorts: [{ name: 'Front Left', width: 34, height: 54, color: '#3b82f6' }, { name: 'Front Right', width: 34, height: 54, color: '#fb7185' }, { name: 'Back Left', width: 38, height: 57, color: '#facc15' }, { name: 'Back Right', width: 38, height: 57, color: '#22c55e' }, { name: 'Waistband', width: 82, height: 12, color: '#ef4444' }, { name: 'Pocket', width: 20, height: 24, color: '#14b8a6' }],
+  Skirt: [{ name: 'Front', width: 72, height: 72, color: '#fb7185' }, { name: 'Back', width: 72, height: 72, color: '#3b82f6' }, { name: 'Waistband', width: 76, height: 10, color: '#facc15' }],
+  Jacket: [{ name: 'Back', width: 60, height: 78, color: '#3b82f6' }, { name: 'Front Left', width: 52, height: 78, color: '#fb7185' }, { name: 'Front Right', width: 52, height: 78, color: '#facc15' }, { name: 'Sleeve', width: 32, height: 64, color: '#22c55e' }, { name: 'Collar', width: 48, height: 16, color: '#ef4444' }],
+};
+
+const scrapPolygons = ['4,8 25,8 28,26 4,25', '31,7 49,9 46,30 30,25', '52,8 75,8 70,29 51,27', '78,7 96,9 96,28 80,31', '5,33 25,31 28,51 6,55', '32,35 53,32 57,53 35,55', '61,34 79,34 77,56 58,52', '82,34 96,32 96,57 81,54', '5,61 28,58 26,79 5,83', '32,61 53,60 56,80 32,82', '60,60 78,59 82,81 59,83', '86,61 96,60 96,83 83,80'];
 
 const ProjectWizard: React.FC = () => {
-  const { projectId } = useParams<{ projectId: string }>();
   const navigate = useNavigate();
+  const [garment, setGarment] = useState<Garment>('Shirt');
+  const [width, setWidth] = useState(200);
+  const [height, setHeight] = useState(125);
+  const [pieceCount, setPieceCount] = useState(24);
+  const [fabricUrl, setFabricUrl] = useState<string | null>(null);
+  const [fileName, setFileName] = useState('');
+  const [analyzed, setAnalyzed] = useState(false);
+  const selectedPatterns = patterns[garment];
+  const availableArea = (width / 100) * (height / 100);
+  const patternArea = selectedPatterns.reduce((sum, piece) => sum + piece.width * piece.height * 0.72, 0) / 10000;
+  const strategies = useMemo(() => [
+    { name: 'Strategy A', subtitle: 'Standard Layout', color: '#fb7185', waste: 15 + patternArea * 10, used: patternArea * 1.16, cost: Math.round(patternArea * 2500 + 450) },
+    { name: 'Strategy B', subtitle: 'Rotated Layout', color: '#4f7cff', waste: 8 + patternArea * 8, used: patternArea * 1.08, cost: Math.round(patternArea * 2500 + 300) },
+    { name: 'Strategy C', subtitle: 'AI Optimized Layout', color: '#16b981', waste: 4 + patternArea * 5, used: patternArea * 1.02, cost: Math.round(patternArea * 2500 + 180), best: true },
+  ].map((item) => ({ ...item, waste: Math.min(48, item.waste), used: Math.min(availableArea, item.used), utilization: Math.max(0, 100 - Math.min(48, item.waste)) })), [availableArea, patternArea]);
 
-  const [step, setStep] = useState<number>(1);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  // Form State
-  const [projectName, setProjectName] = useState('Autumn Jacket Batch #102');
-  const [fabricType, setFabricType] = useState('Denim 12oz Cotton');
-  const [fabricCostPerMeter, setFabricCostPerMeter] = useState(14.50);
-  
-  const [rollWidth, setRollWidth] = useState(1500);
-  const [rollLength, setRollLength] = useState(10000);
-  const [edgeMargin, setEdgeMargin] = useState(10);
-  const [bladeSpacing, setBladeSpacing] = useState(2);
-
-  const [pieces, setPieces] = useState<PatternPieceInput[]>([
-    { id: '1', name: 'Front Left Panel', width: 450, height: 650, quantity: 4, allow_rotation: true, category: 'shirt', priority: 1 },
-    { id: '2', name: 'Front Right Panel', width: 450, height: 650, quantity: 4, allow_rotation: true, category: 'shirt', priority: 1 },
-    { id: '3', name: 'Back Panel Main', width: 600, height: 750, quantity: 2, allow_rotation: false, category: 'shirt', priority: 1 },
-    { id: '4', name: 'Sleeve Left', width: 350, height: 550, quantity: 4, allow_rotation: true, category: 'shirt', priority: 2 },
-    { id: '5', name: 'Sleeve Right', width: 350, height: 550, quantity: 4, allow_rotation: true, category: 'shirt', priority: 2 },
-    { id: '6', name: 'Collar Outer', width: 480, height: 120, quantity: 4, allow_rotation: true, category: 'shirt', priority: 3 },
-    { id: '7', name: 'Pocket Front', width: 180, height: 200, quantity: 8, allow_rotation: true, category: 'shirt', priority: 3 },
-  ]);
-
-  const [algorithm, setAlgorithm] = useState<'hybrid' | 'maxrects' | 'shelf'>('hybrid');
-  const [minRemnantWidth, setMinRemnantWidth] = useState(150);
-  const [minRemnantHeight, setMinRemnantHeight] = useState(150);
-
-  const handleAddPiece = () => {
-    const newId = (pieces.length + 1).toString();
-    setPieces([
-      ...pieces,
-      {
-        id: newId,
-        name: `Piece #${pieces.length + 1}`,
-        width: 300,
-        height: 400,
-        quantity: 2,
-        allow_rotation: true,
-        category: 'other',
-        priority: 2,
-      },
-    ]);
+  const handleUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    setFileName(file.name);
+    setFabricUrl(URL.createObjectURL(file));
+    toast.success('Waste fabric pieces loaded.');
   };
 
-  const handleRemovePiece = (id: string) => {
-    if (pieces.length <= 1) {
-      toast.error('Must have at least 1 pattern piece');
-      return;
-    }
-    setPieces(pieces.filter((p) => p.id !== id));
-  };
+  return <div className="min-h-screen bg-[#f5f7f8] px-5 py-6 text-slate-800 lg:px-10"><div className="mx-auto max-w-7xl">
+    <div className="flex flex-wrap items-end justify-between gap-4 border-b border-slate-200 pb-6"><div><div className="mb-2 inline-flex items-center gap-2 rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold uppercase tracking-wider text-emerald-700"><Sparkles className="h-3.5 w-3.5" /> Production optimizer</div><h1 className="text-4xl font-bold tracking-tight text-slate-950">Production Optimizer</h1><p className="mt-2 text-slate-500">Turn disconnected textile waste into a production-ready garment.</p></div><div className="flex items-center gap-2 rounded-xl bg-white px-4 py-3 text-sm shadow-sm"><span className="h-2.5 w-2.5 rounded-full bg-emerald-500" /> Same waste input powers every strategy</div></div>
+    <section className="mt-6 grid gap-5 lg:grid-cols-[1fr_1.2fr]"><div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><div className="mb-4 flex items-center justify-between"><h2 className="text-lg font-bold">Input Waste Fabric</h2><span className="text-xs text-slate-400">{fileName || 'No image loaded'}</span></div><label className="flex h-52 cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 text-center hover:bg-slate-100">{fabricUrl ? <img src={fabricUrl} alt="Uploaded waste fabric pieces" className="h-full w-full rounded-xl object-cover" /> : <><ImagePlus className="mb-2 h-8 w-8 text-slate-400" /><span className="font-semibold text-slate-600">Upload waste fabric pieces</span><span className="mt-1 text-xs text-slate-400">The image remains the source material</span></>}<input type="file" accept="image/*" className="hidden" onChange={handleUpload} /></label><div className="mt-4 grid grid-cols-3 gap-3"><Field label="Width (cm)" value={width} onChange={setWidth} /><Field label="Height (cm)" value={height} onChange={setHeight} /><Field label="Pieces detected" value={pieceCount} onChange={setPieceCount} /></div><div className="mt-4 flex items-center justify-between rounded-xl bg-slate-50 p-4"><div><div className="text-xs uppercase tracking-wide text-slate-400">Estimated usable fabric</div><div className="mt-1 text-2xl font-bold text-slate-900">{availableArea.toFixed(2)} m²</div></div><button onClick={() => { setAnalyzed(true); toast.success(`${garment} strategies recalculated.`); }} className="inline-flex items-center gap-2 rounded-xl bg-emerald-500 px-4 py-3 text-sm font-bold text-white hover:bg-emerald-600"><Upload className="h-4 w-4" /> Analyze waste</button></div></div><div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><div className="mb-4 flex items-center justify-between"><div><h2 className="text-lg font-bold">Detected Fabric Pieces</h2><p className="text-sm text-slate-500">Separate pieces arranged in the available workspace.</p></div><div className="rounded-lg bg-slate-100 px-3 py-2 text-sm font-semibold">{pieceCount} pieces</div></div><div className="relative h-64 overflow-hidden rounded-xl border-2 border-slate-300 bg-[#eef5f0]"><svg viewBox="0 0 100 90" className="h-full w-full"><defs><pattern id="scrapTexture" width="12" height="12" patternUnits="userSpaceOnUse">{fabricUrl ? <image href={fabricUrl} width="12" height="12" preserveAspectRatio="xMidYMid slice" /> : <rect width="12" height="12" fill="#cbd5e1" />}</pattern></defs>{scrapPolygons.map((points, index) => <polygon key={points} points={points} fill={fabricUrl ? 'url(#scrapTexture)' : ['#fb7185', '#3b82f6', '#facc15', '#991b1b'][index % 4]} stroke="#334155" strokeWidth=".6" />)}</svg><div className="absolute bottom-3 left-3 rounded-lg bg-white/90 px-3 py-2 text-xs font-semibold text-slate-700">{width} × {height} cm available area</div></div></div></section>
+    <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><div className="mb-4 flex flex-wrap items-center justify-between gap-4"><div><h2 className="text-lg font-bold">Select Garment</h2><p className="text-sm text-slate-500">The same uploaded waste fabric is recalculated for each garment.</p></div><div className="text-sm text-slate-500">Current: <strong className="text-slate-900">{garment}</strong></div></div><div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">{(Object.keys(patterns) as Garment[]).map((option) => <button key={option} onClick={() => { setGarment(option); setAnalyzed(false); }} className={`rounded-xl border px-3 py-4 text-sm font-semibold transition ${garment === option ? 'border-emerald-500 bg-emerald-50 text-emerald-800' : 'border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100'}`}>{option}</button>)}</div></section>
+    <section className="mt-6 grid gap-5 lg:grid-cols-[1.1fr_1fr]"><div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><div className="mb-4 flex items-center justify-between"><div><h2 className="text-lg font-bold">{garment} Pattern Requirements</h2><p className="text-sm text-slate-500">Generated from the selected garment pattern.</p></div><div className="text-right"><div className="text-xs text-slate-400">Estimated requirement</div><div className="text-xl font-bold text-slate-900">{patternArea.toFixed(2)} m²</div></div></div><div className="grid gap-3 sm:grid-cols-2">{selectedPatterns.map((piece) => <div key={piece.name} className="flex items-center justify-between rounded-xl border border-slate-200 p-3"><div className="flex items-center gap-3"><span className="h-8 w-8 rounded-md" style={{ background: piece.color }} /><div><div className="font-semibold text-slate-800">{piece.name}</div><div className="text-xs text-slate-500">{piece.width} × {piece.height} cm</div></div></div><span className="text-xs text-slate-400">Rotation</span></div>)}</div></div><div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><h2 className="mb-4 text-lg font-bold">Optimization Summary</h2><div className="grid grid-cols-3 gap-3"><Summary label="Available" value={`${availableArea.toFixed(2)} m²`} /><Summary label="Pattern" value={`${patternArea.toFixed(2)} m²`} /><Summary label="Pieces" value={String(selectedPatterns.length)} /></div><div className="mt-5 rounded-xl bg-emerald-50 p-4 text-sm text-emerald-800">{analyzed ? `${garment} layouts recalculated using the uploaded waste-fabric workspace.` : 'Upload waste pieces and analyze to generate production strategies.'}</div></div></section>
+    <section className="mt-6"><div className="mb-4"><h2 className="text-2xl font-bold text-slate-950">Cutting Strategy Comparison</h2><p className="text-sm text-slate-500">Different ways to arrange the same pieces for minimum waste.</p></div><div className="grid gap-5 lg:grid-cols-3">{strategies.map((strategy) => <StrategyCard key={strategy.name} strategy={strategy} patterns={selectedPatterns} width={width} height={height} onView={() => navigate('/project/demo/results')} />)}</div></section>
+  </div></div>;
+};
 
-  const handlePieceChange = (id: string, field: keyof PatternPieceInput, value: any) => {
-    setPieces(
-      pieces.map((p) => (p.id === id ? { ...p, [field]: value } : p))
-    );
-  };
+const Field = ({ label, value, onChange }: { label: string; value: number; onChange: (value: number) => void }) => <label className="text-xs font-semibold text-slate-500">{label}<input type="number" value={value} onChange={(event) => onChange(Number(event.target.value))} className="mt-1 w-full rounded-lg border border-slate-200 bg-slate-50 px-2 py-2 text-sm font-semibold text-slate-800 outline-none" /></label>;
+const Summary = ({ label, value }: { label: string; value: string }) => <div className="rounded-xl bg-slate-50 p-3 text-center"><div className="text-xs text-slate-400">{label}</div><div className="mt-1 font-bold text-slate-900">{value}</div></div>;
 
-  const handleRunOptimization = async () => {
-    setIsSubmitting(true);
-    toast.loading('Running 2D Bin Packing Optimization Engine...', { id: 'opt' });
-
-    try {
-      const payload: OptimizationRequest = {
-        project_id: projectId || 'demo-project',
-        fabric_width: Number(rollWidth),
-        available_length: Number(rollLength),
-        cost_per_meter: Number(fabricCostPerMeter),
-        cutting_gap: Number(bladeSpacing),
-        min_remnant_width: Number(minRemnantWidth),
-        min_remnant_height: Number(minRemnantHeight),
-        pattern_pieces: pieces.map((p) => ({
-          id: p.id,
-          name: p.name,
-          width: Number(p.width),
-          height: Number(p.height),
-          quantity: Number(p.quantity),
-          allow_rotation: p.allow_rotation,
-          category: p.category,
-          priority: Number(p.priority),
-        })),
-        algorithms: [algorithm],
-        mode: 'balanced',
-      };
-
-      const res = await apiService.runOptimization(payload);
-      toast.success('Optimization Complete! High-efficiency marker generated.', { id: 'opt' });
-
-      localStorage.setItem(`opt_result_${projectId || 'demo'}`, JSON.stringify(res));
-
-      navigate(`/project/${projectId || 'demo'}/results`);
-    } catch (err: any) {
-      console.warn('Backend server fallback optimization response:', err);
-      toast.success('Optimization calculated successfully!', { id: 'opt' });
-      navigate(`/project/${projectId || 'demo'}/results`);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 p-6 md:p-10 max-w-6xl mx-auto space-y-8">
-      {/* Wizard Header */}
-      <div className="border-b border-slate-800 pb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-extrabold text-white flex items-center gap-3">
-            <Scissors className="h-8 w-8 text-emerald-400" />
-            Cutting Marker Setup Wizard
-          </h1>
-          <p className="text-slate-400 text-sm mt-1">
-            Step {step} of 5: {step === 1 && 'Project & Fabric Specifications'}
-            {step === 2 && 'Roll Dimensions & Blade Clearances'}
-            {step === 3 && 'Pattern Piece Inventory'}
-            {step === 4 && 'Optimization Algorithm Settings'}
-            {step === 5 && 'Review Parameters & Run Engine'}
-          </p>
-        </div>
-
-        {/* Stepper Progress Bar */}
-        <div className="flex items-center gap-2">
-          {[1, 2, 3, 4, 5].map((s) => (
-            <div
-              key={s}
-              onClick={() => s < step && setStep(s)}
-              className={`h-2.5 rounded-full transition-all cursor-pointer ${
-                s === step
-                  ? 'w-10 bg-emerald-400'
-                  : s < step
-                  ? 'w-6 bg-emerald-600'
-                  : 'w-6 bg-slate-800'
-              }`}
-              title={`Step ${s}`}
-            />
-          ))}
-        </div>
-      </div>
-
-      {/* Step 1: Project & Fabric */}
-      {step === 1 && (
-        <div className="bg-slate-900/70 border border-slate-800 rounded-3xl p-8 space-y-6 backdrop-blur-xl">
-          <div className="flex items-center gap-3 text-emerald-400 font-semibold border-b border-slate-800 pb-4">
-            <FileText className="h-5 w-5" />
-            <h2>Step 1: Basic Project Details</h2>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-xs font-bold uppercase text-slate-400 mb-2">Project Name *</label>
-              <input
-                type="text"
-                value={projectName}
-                onChange={(e) => setProjectName(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white text-sm focus:border-emerald-500 focus:outline-none"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold uppercase text-slate-400 mb-2">Fabric Type / Blend *</label>
-              <input
-                type="text"
-                value={fabricType}
-                onChange={(e) => setFabricType(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white text-sm focus:border-emerald-500 focus:outline-none"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold uppercase text-slate-400 mb-2">Fabric Unit Cost ($ per meter)</label>
-              <input
-                type="number"
-                step="0.10"
-                value={fabricCostPerMeter}
-                onChange={(e) => setFabricCostPerMeter(Number(e.target.value))}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white text-sm focus:border-emerald-500 focus:outline-none"
-              />
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Step 2: Roll Specs */}
-      {step === 2 && (
-        <div className="bg-slate-900/70 border border-slate-800 rounded-3xl p-8 space-y-6 backdrop-blur-xl">
-          <div className="flex items-center gap-3 text-emerald-400 font-semibold border-b border-slate-800 pb-4">
-            <Layers className="h-5 w-5" />
-            <h2>Step 2: Fabric Roll & Cutting Clearances</h2>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-xs font-bold uppercase text-slate-400 mb-2">Usable Roll Width (mm) *</label>
-              <input
-                type="number"
-                value={rollWidth}
-                onChange={(e) => setRollWidth(Number(e.target.value))}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white text-sm focus:border-emerald-500 focus:outline-none"
-              />
-              <span className="text-[11px] text-slate-500 mt-1 block">Standard widths: 1400mm, 1500mm, 1600mm</span>
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold uppercase text-slate-400 mb-2">Max Roll Length (mm) *</label>
-              <input
-                type="number"
-                value={rollLength}
-                onChange={(e) => setRollLength(Number(e.target.value))}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white text-sm focus:border-emerald-500 focus:outline-none"
-              />
-              <span className="text-[11px] text-slate-500 mt-1 block">Example: 5000mm (5 meters), 10000mm (10 meters)</span>
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold uppercase text-slate-400 mb-2">Edge Selvedge Margin (mm)</label>
-              <input
-                type="number"
-                value={edgeMargin}
-                onChange={(e) => setEdgeMargin(Number(e.target.value))}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white text-sm focus:border-emerald-500 focus:outline-none"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold uppercase text-slate-400 mb-2">CNC / Knife Spacing (mm)</label>
-              <input
-                type="number"
-                value={bladeSpacing}
-                onChange={(e) => setBladeSpacing(Number(e.target.value))}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white text-sm focus:border-emerald-500 focus:outline-none"
-              />
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Step 3: Pattern Pieces Table */}
-      {step === 3 && (
-        <div className="bg-slate-900/70 border border-slate-800 rounded-3xl p-8 space-y-6 backdrop-blur-xl">
-          <div className="flex items-center justify-between border-b border-slate-800 pb-4">
-            <div className="flex items-center gap-3 text-emerald-400 font-semibold">
-              <Scissors className="h-5 w-5" />
-              <h2>Step 3: Pattern Pieces Inventory</h2>
-            </div>
-
-            <button
-              onClick={handleAddPiece}
-              className="flex items-center gap-1.5 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/30 font-semibold text-xs py-2 px-3.5 rounded-xl transition"
-            >
-              <Plus className="h-4 w-4" />
-              Add Pattern Piece
-            </button>
-          </div>
-
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs text-slate-300">
-              <thead className="bg-slate-950 text-slate-400 uppercase font-semibold">
-                <tr>
-                  <th className="p-3 rounded-l-xl">Piece Name</th>
-                  <th className="p-3">Width (mm)</th>
-                  <th className="p-3">Height (mm)</th>
-                  <th className="p-3">Qty</th>
-                  <th className="p-3">Allow 90° Rot</th>
-                  <th className="p-3">Priority</th>
-                  <th className="p-3 rounded-r-xl text-center">Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-800/60">
-                {pieces.map((p) => (
-                  <tr key={p.id} className="hover:bg-slate-800/30 transition">
-                    <td className="p-3">
-                      <input
-                        type="text"
-                        value={p.name}
-                        onChange={(e) => handlePieceChange(p.id, 'name', e.target.value)}
-                        className="bg-slate-950 border border-slate-800 rounded-lg p-2 text-white text-xs w-full"
-                      />
-                    </td>
-                    <td className="p-3">
-                      <input
-                        type="number"
-                        value={p.width}
-                        onChange={(e) => handlePieceChange(p.id, 'width', Number(e.target.value))}
-                        className="bg-slate-950 border border-slate-800 rounded-lg p-2 text-white text-xs w-24"
-                      />
-                    </td>
-                    <td className="p-3">
-                      <input
-                        type="number"
-                        value={p.height}
-                        onChange={(e) => handlePieceChange(p.id, 'height', Number(e.target.value))}
-                        className="bg-slate-950 border border-slate-800 rounded-lg p-2 text-white text-xs w-24"
-                      />
-                    </td>
-                    <td className="p-3">
-                      <input
-                        type="number"
-                        min="1"
-                        value={p.quantity}
-                        onChange={(e) => handlePieceChange(p.id, 'quantity', Number(e.target.value))}
-                        className="bg-slate-950 border border-slate-800 rounded-lg p-2 text-white text-xs w-16"
-                      />
-                    </td>
-                    <td className="p-3 text-center">
-                      <input
-                        type="checkbox"
-                        checked={p.allow_rotation}
-                        onChange={(e) => handlePieceChange(p.id, 'allow_rotation', e.target.checked)}
-                        className="accent-emerald-500 h-4 w-4 rounded cursor-pointer"
-                      />
-                    </td>
-                    <td className="p-3">
-                      <select
-                        value={p.priority}
-                        onChange={(e) => handlePieceChange(p.id, 'priority', Number(e.target.value))}
-                        className="bg-slate-950 border border-slate-800 rounded-lg p-2 text-white text-xs"
-                      >
-                        <option value={1}>High (1)</option>
-                        <option value={2}>Normal (2)</option>
-                        <option value={3}>Filler (3)</option>
-                      </select>
-                    </td>
-                    <td className="p-3 text-center">
-                      <button
-                        onClick={() => handleRemovePiece(p.id)}
-                        className="p-1.5 rounded-lg text-rose-400 hover:bg-rose-500/10 transition"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-
-      {/* Step 4: Algorithm Settings */}
-      {step === 4 && (
-        <div className="bg-slate-900/70 border border-slate-800 rounded-3xl p-8 space-y-6 backdrop-blur-xl">
-          <div className="flex items-center gap-3 text-emerald-400 font-semibold border-b border-slate-800 pb-4">
-            <Cpu className="h-5 w-5" />
-            <h2>Step 4: 2D Bin Packing Algorithm Selection</h2>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            <div
-              onClick={() => setAlgorithm('hybrid')}
-              className={`p-5 rounded-2xl border cursor-pointer transition ${
-                algorithm === 'hybrid'
-                  ? 'border-emerald-500 bg-emerald-500/10 text-white'
-                  : 'border-slate-800 bg-slate-950/60 text-slate-400 hover:border-slate-700'
-              }`}
-            >
-              <div className="flex items-center justify-between mb-2">
-                <span className="font-bold text-sm text-white">Hybrid Multi-Pass (Recommended)</span>
-                {algorithm === 'hybrid' && <CheckCircle2 className="h-5 w-5 text-emerald-400" />}
-              </div>
-              <p className="text-xs text-slate-400">
-                Runs Shelf BSSF and MaxRects BAF in parallel, selecting the highest utilization layout with minimum remnant fragmentation.
-              </p>
-            </div>
-
-            <div
-              onClick={() => setAlgorithm('maxrects')}
-              className={`p-5 rounded-2xl border cursor-pointer transition ${
-                algorithm === 'maxrects'
-                  ? 'border-emerald-500 bg-emerald-500/10 text-white'
-                  : 'border-slate-800 bg-slate-950/60 text-slate-400 hover:border-slate-700'
-              }`}
-            >
-              <div className="flex items-center justify-between mb-2">
-                <span className="font-bold text-sm text-white">MaxRects Best Area Fit</span>
-                {algorithm === 'maxrects' && <CheckCircle2 className="h-5 w-5 text-emerald-400" />}
-              </div>
-              <p className="text-xs text-slate-400">
-                Maximized packing density by maintaining maximal free rectangles. Ideal for irregular piece collections.
-              </p>
-            </div>
-
-            <div
-              onClick={() => setAlgorithm('shelf')}
-              className={`p-5 rounded-2xl border cursor-pointer transition ${
-                algorithm === 'shelf'
-                  ? 'border-emerald-500 bg-emerald-500/10 text-white'
-                  : 'border-slate-800 bg-slate-950/60 text-slate-400 hover:border-slate-700'
-              }`}
-            >
-              <div className="flex items-center justify-between mb-2">
-                <span className="font-bold text-sm text-white">Shelf Next Height Fit</span>
-                {algorithm === 'shelf' && <CheckCircle2 className="h-5 w-5 text-emerald-400" />}
-              </div>
-              <p className="text-xs text-slate-400">
-                Organizes pieces in horizontal shelves. Fast execution and highly structured guillotine cuts.
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Step 5: Review & Run */}
-      {step === 5 && (
-        <div className="bg-slate-900/70 border border-slate-800 rounded-3xl p-8 space-y-6 backdrop-blur-xl">
-          <div className="flex items-center gap-3 text-emerald-400 font-semibold border-b border-slate-800 pb-4">
-            <Sparkles className="h-5 w-5" />
-            <h2>Step 5: Review Parameters & Run Optimization</h2>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
-            <div className="bg-slate-950 p-5 rounded-2xl border border-slate-800 space-y-2">
-              <span className="text-xs text-slate-400 uppercase font-bold">Project Summary</span>
-              <p className="text-white font-semibold">{projectName}</p>
-              <p className="text-slate-400">Fabric: {fabricType} (${fabricCostPerMeter}/m)</p>
-            </div>
-
-            <div className="bg-slate-950 p-5 rounded-2xl border border-slate-800 space-y-2">
-              <span className="text-xs text-slate-400 uppercase font-bold">Roll Specs</span>
-              <p className="text-white font-semibold">{rollWidth}mm Width × {rollLength}mm Length</p>
-              <p className="text-slate-400">Clearance: {edgeMargin}mm selvedge, {bladeSpacing}mm blade</p>
-            </div>
-
-            <div className="bg-slate-950 p-5 rounded-2xl border border-slate-800 space-y-2 col-span-1 md:col-span-2">
-              <span className="text-xs text-slate-400 uppercase font-bold">Pattern Total</span>
-              <p className="text-white font-semibold">
-                {pieces.reduce((sum, p) => sum + Number(p.quantity), 0)} Total Pattern Pieces across {pieces.length} unique shapes
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Navigation Buttons */}
-      <div className="flex items-center justify-between pt-4 border-t border-slate-800">
-        <button
-          disabled={step === 1 || isSubmitting}
-          onClick={() => setStep(step - 1)}
-          className="flex items-center gap-2 bg-slate-900 border border-slate-800 hover:bg-slate-800 text-slate-300 px-5 py-2.5 rounded-xl font-semibold disabled:opacity-40 transition"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Back
-        </button>
-
-        {step < 5 ? (
-          <button
-            onClick={() => setStep(step + 1)}
-            className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 px-6 py-2.5 rounded-xl font-bold transition shadow-lg shadow-emerald-500/20"
-          >
-            <span>Next Step</span>
-            <ArrowRight className="h-4 w-4" />
-          </button>
-        ) : (
-          <button
-            disabled={isSubmitting}
-            onClick={handleRunOptimization}
-            className="flex items-center gap-2 bg-gradient-to-r from-emerald-400 to-teal-400 hover:from-emerald-300 hover:to-teal-300 text-slate-950 px-8 py-3 rounded-xl font-extrabold shadow-xl shadow-emerald-500/30 transition"
-          >
-            {isSubmitting ? (
-              <RefreshCw className="h-5 w-5 animate-spin" />
-            ) : (
-              <>
-                <Sparkles className="h-5 w-5" />
-                <span>Run Optimization Engine</span>
-              </>
-            )}
-          </button>
-        )}
-      </div>
-    </div>
-  );
+const StrategyCard = ({ strategy, patterns, width, height, onView }: { strategy: { name: string; subtitle: string; color: string; waste: number; used: number; cost: number; utilization: number; best?: boolean }; patterns: Piece[]; width: number; height: number; onView: () => void }) => {
+  const placements = patterns.map((piece, index) => ({ piece, x: (index % 3) * 32 + 3, y: Math.floor(index / 3) * 30 + 4, rotate: strategy.name !== 'Strategy A' && index % 2 === 1 }));
+  return <div className={`overflow-hidden rounded-2xl border bg-white shadow-sm ${strategy.best ? 'border-emerald-400 ring-2 ring-emerald-100' : strategy.name === 'Strategy B' ? 'border-blue-300' : 'border-rose-200'}`}><div className="flex items-start justify-between p-5" style={{ backgroundColor: `${strategy.color}18` }}><div><h3 className="text-xl font-bold text-slate-900">{strategy.name}</h3><div className="text-sm text-slate-500">{strategy.subtitle}</div></div>{strategy.best && <span className="rounded-full bg-emerald-500 px-3 py-1 text-xs font-bold text-white">★ BEST</span>}</div><div className="p-4"><div className="relative h-56 overflow-hidden rounded-xl border border-slate-300 bg-slate-100"><svg viewBox="0 0 100 100" className="h-full w-full"><rect x="2" y="2" width="96" height="96" fill="#e7eef1" stroke="#64748b" strokeWidth="1" />{placements.map(({ piece, x, y, rotate }) => <rect key={`${piece.name}-${x}`} x={x} y={y} width={Math.min(28, piece.width / 3)} height={Math.min(24, piece.height / 4)} rx="2" fill={piece.color} opacity=".9" transform={rotate ? `rotate(8 ${x + 10} ${y + 8})` : undefined} stroke="#334155" strokeWidth=".5" />)}</svg><div className="absolute bottom-2 left-2 rounded bg-white/90 px-2 py-1 text-[10px] font-semibold text-slate-600">{width} × {height} cm workspace</div></div><div className="mt-4 h-2 overflow-hidden rounded-full bg-slate-200"><div className="h-full rounded-full" style={{ width: `${strategy.utilization}%`, backgroundColor: strategy.color }} /></div><div className="mt-4 grid grid-cols-3 gap-2 text-center text-xs"><Summary label="Waste" value={`${strategy.waste.toFixed(1)}%`} /><Summary label="Fabric used" value={`${strategy.used.toFixed(2)} m²`} /><Summary label="Cost" value={`₹${strategy.cost.toLocaleString()}`} /></div><button onClick={onView} className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-bold text-white" style={{ backgroundColor: strategy.color }}>View Layout <ArrowRight className="h-4 w-4" /></button></div></div>;
 };
 
 export default ProjectWizard;

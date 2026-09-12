@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { getIdToken } from '@/firebase/auth';
-import type { OptimizationRequest, OptimizationResponse, RemnantAnalysisResponse } from '@/types';
+import type { FabricAnalysisResponse, OptimizationRequest, OptimizationResponse, RemnantAnalysisResponse } from '@/types';
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
@@ -66,6 +66,22 @@ export const analyzeRemnant = (data: {
 }): Promise<RemnantAnalysisResponse> =>
   api.post<RemnantAnalysisResponse>('/api/remnants/analyze', data).then((r) => r.data);
 
+export const analyzeFabric = (data: {
+  image: File;
+  width: number;
+  length: number;
+  shape: string;
+  material: string;
+}): Promise<FabricAnalysisResponse> => {
+  const form = new FormData();
+  form.append('fabric_image', data.image);
+  form.append('width_cm', String(data.width));
+  form.append('length_cm', String(data.length));
+  form.append('shape', data.shape);
+  form.append('material_type', data.material);
+  return api.post<FabricAnalysisResponse>('/api/analyze-fabric', form).then((r) => r.data);
+};
+
 // ─── Analytics ───────────────────────────────────────────────────────────────
 export const getProjectAnalytics = (projectId: string) =>
   api.get(`/api/projects/${projectId}/analytics`).then((r) => r.data);
@@ -83,6 +99,7 @@ export const apiService = {
   deleteProject,
   runOptimization,
   analyzeRemnant,
+  analyzeFabric,
   getProjectAnalytics,
   getRecommendations,
 };
