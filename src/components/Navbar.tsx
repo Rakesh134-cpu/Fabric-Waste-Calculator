@@ -10,7 +10,6 @@ import {
   Layers3,
   FolderOpen,
   History,
-  Leaf,
   BarChart3,
   Settings,
   LogOut,
@@ -24,7 +23,6 @@ const navItems = [
   { label: 'Cutting Layouts', path: '/layouts', icon: Layers3 },
   { label: 'Pattern Library', path: '/patterns', icon: FolderOpen },
   { label: 'Production History', path: '/history', icon: History },
-  { label: 'Sustainability', path: '/sustainability', icon: Leaf },
   { label: 'Reports', path: '/reports', icon: BarChart3 },
   { label: 'Settings', path: '/settings', icon: Settings },
 ];

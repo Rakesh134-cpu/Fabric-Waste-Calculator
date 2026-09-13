@@ -8,7 +8,6 @@ import Dashboard from '@/pages/Dashboard';
 import ProjectWizard from '@/pages/ProjectWizard';
 import OptimizationResults from '@/pages/OptimizationResults';
 import RemnantAnalysis from '@/pages/RemnantAnalysis';
-import Sustainability from '@/pages/Sustainability';
 import ProductionHistory from '@/pages/ProductionHistory';
 import CuttingLayouts from '@/pages/CuttingLayouts';
 import PatternLibrary from '@/pages/PatternLibrary';
@@ -120,14 +119,6 @@ const App: React.FC = () => {
         element={
           <PrivateRoute>
             <PatternLibrary />
-          </PrivateRoute>
-        }
-      />
-      <Route
-        path="/sustainability"
-        element={
-          <PrivateRoute>
-            <Sustainability />
           </PrivateRoute>
         }
       />

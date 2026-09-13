@@ -1,149 +1,47 @@
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Download, Search, Plus, ArrowRight, Layers3 } from 'lucide-react';
+import React, { useMemo, useState } from 'react';
+import { ArrowRight, Download, Grid3X3, Maximize2, Ruler, Search, X } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { createStrategy, getPieceCode, getPieceColor, type OptimizerInput, type Placement, type StrategyResult } from '@/services/optimizerEngine';
+
+const fallback: OptimizerInput = { width: 150, length: 20, cost: 250, gap: .5, fabric: 'Cotton', garment: 'Shirt', size: 'M', quantity: 50, pieces: [{ id: 1, name: 'Back', width: 70, height: 50, quantity: 1, rotation: true }, { id: 2, name: 'Front Left', width: 70, height: 50, quantity: 1, rotation: true }, { id: 3, name: 'Front Right', width: 70, height: 50, quantity: 1, rotation: true }, { id: 4, name: 'Sleeve', width: 60, height: 30, quantity: 2, rotation: true }, { id: 5, name: 'Collar', width: 40, height: 20, quantity: 1, rotation: false }] };
+const garmentTitle = (garment: string) => garment === 'Shirt' ? "Men's Shirt" : garment === 'Pants' ? "Men's Pants" : garment;
 
 const CuttingLayouts: React.FC = () => {
-  const navigate = useNavigate();
-
-  const handleExport = () => toast.success('Cutting plan exported successfully.');
-
-  return (
-    <div className="min-h-screen bg-[#f3f5f3] text-slate-800">
-      <div className="flex items-center justify-between gap-4 border-b border-slate-200 bg-white/60 px-8 py-4 backdrop-blur-sm">
-        <div className="flex items-center gap-3 text-slate-500">
-          <Search className="h-4 w-4" />
-          <input
-            type="text"
-            value="Search jobs, patterns..."
-            readOnly
-            className="w-72 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500 outline-none"
-          />
-        </div>
-
-        <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 text-sm font-bold">
-            PM
-          </div>
-          <div className="text-sm text-slate-600">Production Manager</div>
-        </div>
-      </div>
-
-      <div className="px-8 py-8">
-        <div className="mb-6 flex items-center justify-between gap-4">
-          <div>
-            <h1 className="text-4xl font-semibold tracking-tight text-slate-900">Optimized Cutting Layout</h1>
-            <p className="mt-2 text-sm text-slate-500">Strategy C — AI Optimized · Men’s Shirt · 50 units · 150 cm Cotton</p>
-          </div>
-
-          <button
-            onClick={handleExport}
-            className="inline-flex items-center gap-2 rounded-xl bg-emerald-500 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-600"
-          >
-            <Download className="h-4 w-4" />
-            Export Cutting Plan
-          </button>
-        </div>
-
-        <div className="grid gap-6 xl:grid-cols-[1.5fr_0.9fr]">
-          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <div className="mb-4 flex items-center gap-3 text-sm text-slate-500">
-              <div className="flex items-center gap-2 rounded-md border border-slate-200 bg-slate-50 px-2 py-1">
-                <Search className="h-3.5 w-3.5" />
-                <span>100%</span>
-              </div>
-              <div className="flex items-center gap-2 rounded-md border border-slate-200 bg-slate-50 px-2 py-1">
-                <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
-                Grid
-              </div>
-              <div className="flex items-center gap-2 rounded-md border border-slate-200 bg-slate-50 px-2 py-1">
-                <span className="h-2.5 w-2.5 rounded-full bg-slate-300" />
-                Dimensions
-              </div>
-              <div className="flex items-center gap-2 rounded-md border border-slate-200 bg-slate-50 px-2 py-1">
-                <span className="h-2.5 w-2.5 rounded-full bg-amber-300" />
-                Waste
-              </div>
-            </div>
-
-            <div className="rounded-2xl border border-slate-200 bg-[#f7f9f7] p-4">
-              <div className="grid grid-cols-2 gap-3">
-                {[1, 2, 3, 4].map((item) => (
-                  <div key={item} className="relative h-28 rounded-lg border border-slate-200 bg-[#dfeaf5] p-2">
-                    <div className="flex h-full items-center justify-center text-[10px] font-medium text-slate-500">
-                      {item % 2 === 0 ? 'Back' : 'Front'}
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <div className="mt-4 grid grid-cols-2 gap-2">
-                {['Sleeve', 'Collar', 'Pocket', 'Waste'].map((label, index) => (
-                  <div
-                    key={label}
-                    className={`flex h-16 items-center justify-center rounded-lg border text-[10px] font-medium ${
-                      index === 0 || index === 1
-                        ? 'border-emerald-200 bg-emerald-100 text-emerald-700'
-                        : index === 2
-                          ? 'border-amber-200 bg-amber-100 text-amber-700'
-                          : 'border-rose-200 bg-rose-100 text-rose-700'
-                    }`}
-                  >
-                    {label}
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="mt-5 flex flex-wrap gap-3 text-xs text-slate-500">
-              <span className="inline-flex items-center gap-2"><span className="h-3 w-3 rounded-sm bg-sky-200" /> Body pieces</span>
-              <span className="inline-flex items-center gap-2"><span className="h-3 w-3 rounded-sm bg-emerald-200" /> Sleeves</span>
-              <span className="inline-flex items-center gap-2"><span className="h-3 w-3 rounded-sm bg-amber-200" /> Collar</span>
-              <span className="inline-flex items-center gap-2"><span className="h-3 w-3 rounded-sm bg-rose-200" /> Pocket</span>
-              <span className="inline-flex items-center gap-2"><span className="h-3 w-3 rounded-sm border border-dashed border-rose-300" /> Reusable leftover</span>
-            </div>
-          </div>
-
-          <div className="space-y-4">
-            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-              <div className="mb-4 text-lg font-semibold text-slate-900">Layout Summary</div>
-              <div className="space-y-3 text-sm text-slate-600">
-                <div className="flex items-center justify-between"><span>Fabric dimensions</span><span className="font-semibold text-slate-900">150 × 1680 cm</span></div>
-                <div className="flex items-center justify-between"><span>Pattern area</span><span className="font-semibold text-slate-900">168,800 cm²</span></div>
-                <div className="flex items-center justify-between"><span>Used</span><span className="font-semibold text-emerald-600">95.4%</span></div>
-                <div className="flex items-center justify-between"><span>Waste</span><span className="font-semibold text-rose-500">4.6%</span></div>
-                <div className="flex items-center justify-between"><span>Reusable</span><span className="font-semibold text-amber-500">1.2 m²</span></div>
-                <div className="flex items-center justify-between"><span>Est. Saving</span><span className="font-semibold text-slate-900">₹850</span></div>
-              </div>
-              <div className="mt-6 flex items-center justify-center">
-                <div className="flex h-28 w-28 items-center justify-center rounded-full border-[10px] border-emerald-500 border-t-transparent border-r-transparent text-xl font-semibold text-emerald-600">
-                  95.4%
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              <button
-                onClick={() => navigate('/remnant')}
-                className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-500 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-600"
-              >
-                Analyze Leftover
-                <ArrowRight className="h-4 w-4" />
-              </button>
-
-              <button
-                onClick={handleExport}
-                className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-              >
-                <Download className="h-4 w-4" />
-                Export PDF
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+  const [expanded, setExpanded] = useState(false);
+  const input = useMemo<OptimizerInput>(() => { try { const saved = JSON.parse(localStorage.getItem('ecocut:optimizer') || ''); return saved?.pieces ? saved : fallback; } catch { return fallback; } }, []);
+  const optimized = useMemo(() => createStrategy(input, 'optimized'), [input]);
+  const standard = useMemo(() => createStrategy(input, 'standard'), [input]);
+  const saving = Math.max(0, standard.cost - optimized.cost);
+  const reusable = Math.max(0, input.width / 100 * Math.max(0, input.length - optimized.fabricUsed) * .25);
+  return <div className="min-h-screen bg-[#f3f6f4] text-slate-800">
+    <header className="flex items-center justify-between border-b border-slate-200 bg-white/80 px-7 py-3 backdrop-blur"><div className="flex items-center gap-3 text-slate-500"><Search className="h-4 w-4" /><div className="w-64 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm">Search jobs, patterns...</div></div><div className="flex items-center gap-3"><div className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-100 text-sm font-bold text-emerald-700">PM</div><span className="text-sm text-slate-600">Production Manager</span></div></header>
+    <main className="px-7 py-7"><div className="mb-6 flex items-start justify-between gap-5"><div><h1 className="text-4xl font-semibold tracking-tight text-slate-900">Optimized Cutting Layout</h1><p className="mt-2 text-sm text-slate-500">Strategy C — AI Optimized · {garmentTitle(input.garment)} · {input.quantity} units · {input.width} cm {input.fabric || 'Cotton'}</p></div><button onClick={() => toast.success('Cutting plan exported successfully.')} className="inline-flex items-center gap-2 rounded-xl bg-emerald-500 px-4 py-3 text-sm font-semibold text-white shadow-sm hover:bg-emerald-600"><Download className="h-4 w-4" />Export Cutting Plan</button></div>
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.65fr)_360px]"><section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><div className="mb-4 flex flex-wrap gap-2 text-xs font-medium text-slate-600"><Control icon={<Search className="h-3.5 w-3.5" />} label="100%" /><Control icon={<Grid3X3 className="h-3.5 w-3.5 text-emerald-600" />} label="Grid" /><Control icon={<Ruler className="h-3.5 w-3.5" />} label="Dimensions" /><Control icon={<span className="h-2.5 w-2.5 rounded-full bg-amber-300" />} label="Waste" /></div><Marker input={input} result={optimized} /><Legend input={input} /><button onClick={() => setExpanded(true)} className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"><Maximize2 className="h-4 w-4" />Zoom Cutting Layout</button></section>
+        <aside className="space-y-4"><section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><h2 className="text-lg font-semibold text-slate-900">Layout Summary</h2><div className="mt-4 space-y-3 text-sm text-slate-600"><Summary label="Fabric dimensions" value={`${input.width} × ${Math.round(optimized.fabricUsed * 100)} cm`} /><Summary label="Pattern area" value={`${optimized.patternArea.toFixed(2)} m²`} /><Summary label="Used" value={`${optimized.utilization.toFixed(1)}%`} tone="text-emerald-600" /><Summary label="Waste" value={`${optimized.wastePercent.toFixed(1)}%`} tone="text-rose-500" /><Summary label="Reusable" value={`${reusable.toFixed(2)} m²`} tone="text-amber-500" /><Summary label="Est. Saving" value={`₹${Math.round(saving).toLocaleString('en-IN')}`} /></div><div className="mx-auto mt-7 flex h-32 w-32 items-center justify-center rounded-full text-xl font-bold text-emerald-600" style={{ background: `conic-gradient(#10b981 ${optimized.utilization}%, #e5e7eb 0)`, boxShadow: 'inset 0 0 0 12px white' }}>{optimized.utilization.toFixed(1)}%</div><p className="mt-3 text-center text-xs font-medium text-slate-500">Material utilization</p></section><button onClick={() => toast.success('Leftover analysis opened.')} className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-500 px-4 py-3 text-sm font-semibold text-white hover:bg-emerald-600">Analyze Leftover <ArrowRight className="h-4 w-4" /></button><button onClick={() => toast.success('PDF export is ready.')} className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"><Download className="h-4 w-4" />Export PDF</button></aside></div>
+    </main>{expanded && <MarkerModal input={input} result={optimized} close={() => setExpanded(false)} />}</div>;
 };
 
+const Control = ({ icon, label }: { icon: React.ReactNode; label: string }) => <span className="inline-flex items-center gap-2 rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1.5">{icon}{label}</span>;
+const Summary = ({ label, value, tone = 'text-slate-900' }: { label: string; value: string; tone?: string }) => <div className="flex items-center justify-between"><span>{label}</span><b className={tone}>{value}</b></div>;
+const Legend = ({ input }: { input: OptimizerInput }) => <div className="mt-5 border-t border-slate-100 pt-4"><h3 className="text-sm font-semibold text-slate-800">Pattern Piece Legend</h3><div className="mt-3 grid grid-cols-2 gap-x-5 gap-y-2 text-xs text-slate-600 sm:grid-cols-4">{input.pieces.map((piece) => <span key={piece.id} className="flex items-center gap-2"><i className="h-3.5 w-3.5 rounded-sm border border-slate-500" style={{ background: getPieceColor(piece.name) }} />{getPieceCode(piece.name)} = {piece.name}</span>)}<span className="flex items-center gap-2"><i className="h-3.5 w-3.5 rounded-sm border border-dashed border-slate-500 bg-slate-100" />Reusable leftover</span></div></div>;
+
+const Marker = ({ input, result, full = false }: { input: OptimizerInput; result: StrategyResult; full?: boolean }) => {
+  if (!full) return <MarkerOverview input={input} result={result} />;
+  const usedCm = Math.max(1, result.fabricUsed * 100), rollCm = Math.max(usedCm, input.length * 100), displayHeight = full ? rollCm : Math.max(input.width * 2.9, rollCm / 4.5), yScale = displayHeight / rollCm, usedY = usedCm * yScale;
+  return <div className={`rounded-2xl border border-slate-200 bg-[#f7f9f7] p-4 ${full ? 'min-w-[760px]' : ''}`}><div className="mb-2 text-center text-xs font-bold text-slate-700">←──────── {input.width} cm Fabric Width ────────→</div><svg viewBox={`-14 -8 ${input.width + 28} ${displayHeight + 18}`} className="block w-full" style={{ height: full ? `${Math.max(700, displayHeight * .8)}px` : '570px' }} preserveAspectRatio="none"><defs><pattern id="marker-grid" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M 10 0 L 0 0 0 10" fill="none" stroke="#d8e1dc" strokeWidth=".45" /></pattern></defs><rect width={input.width} height={displayHeight} fill="url(#marker-grid)" stroke="#1e3a4f" strokeWidth="1" /><rect y={usedY} width={input.width} height={Math.max(0, displayHeight - usedY)} fill="#e5e7eb" stroke="#64748b" strokeDasharray="2 1" />{result.placements.map((piece) => <PatternPiece key={piece.id} piece={piece} yScale={yScale} />)}<line x1="-8" y1="0" x2="-8" y2={usedY} stroke="#17365d" strokeWidth=".8" /><text x="-10" y={usedY / 2} transform={`rotate(-90 -10 ${usedY / 2})`} textAnchor="middle" fontSize="5" fontWeight="700" fill="#17365d">{result.fabricUsed.toFixed(1)} m FABRIC USED</text>{displayHeight - usedY > 8 && <text x={input.width / 2} y={usedY + (displayHeight - usedY) / 2} textAnchor="middle" fontSize="5" fontWeight="800" fill="#334155">UNUSED FABRIC (WASTE)</text>}</svg><div className="mt-2 text-center text-xs font-semibold text-slate-600">{result.garmentsPlaced} / {input.quantity} complete {input.garment.toLowerCase()}s placed · actual marker coordinates</div></div>;
+};
+const MarkerOverview = ({ input, result }: { input: OptimizerInput; result: StrategyResult }) => {
+  const numbers = result.garmentsPlaced <= 6 ? Array.from({ length: result.garmentsPlaced }, (_, i) => i + 1) : [1, 2, 3, 4, 5, result.garmentsPlaced];
+  return <div className="rounded-2xl border border-slate-300 bg-[#fbfdfb] p-3"><div className="mb-2 text-center text-xs font-bold text-slate-700">←──────── {input.width} cm Fabric Width ────────→</div><div className="relative rounded-lg border border-[#1e3a4f] bg-[#f7f3df] p-2"><div className="absolute -left-7 top-1/2 -rotate-90 text-[10px] font-bold text-[#17365d]">{result.fabricUsed.toFixed(1)} m USED</div><div className="grid grid-cols-2 gap-2">{numbers.map((number, index) => <React.Fragment key={number}>{index === 5 && <div className="col-span-2 py-1 text-center text-sm font-black tracking-[.45em] text-slate-400">···</div>}<GarmentGroup input={input} number={number} pieces={result.placements.filter((piece) => piece.garmentNumber === number)} /></React.Fragment>)}</div><div className="mt-2 rounded border border-dashed border-slate-400 bg-slate-200 py-2 text-center text-[10px] font-bold text-slate-600">UNUSED FABRIC (WASTE) · {(input.length - result.fabricUsed).toFixed(1)} m remaining</div></div><div className="mt-2 text-center text-xs font-semibold text-slate-600">{result.garmentsPlaced} / {input.quantity} COMPLETE {input.garment.toUpperCase()}S PLACED</div></div>;
+};
+const GarmentGroup = ({ input, number, pieces }: { input: OptimizerInput; number: number; pieces: Placement[] }) => {
+  if (!pieces.length) return null;
+  const minX = Math.min(...pieces.map((piece) => piece.x)), minY = Math.min(...pieces.map((piece) => piece.y)), maxX = Math.max(...pieces.map((piece) => piece.x + piece.width)), maxY = Math.max(...pieces.map((piece) => piece.y + piece.height));
+  const width = Math.max(1, maxX - minX), height = Math.max(1, maxY - minY);
+  return <section className="overflow-hidden rounded-md border border-[#54708f] bg-white shadow-sm"><div className="border-b border-[#cad8e8] bg-[#edf4fb] px-2 py-1 text-center text-[10px] font-extrabold tracking-wide text-[#071d3b]">{input.garment.toUpperCase()} #{number}</div><svg viewBox={`-2 -2 ${width + 4} ${height + 4}`} preserveAspectRatio="xMidYMid meet" className="block h-32 w-full bg-[#fffdf4]">{pieces.map((piece) => <OverviewPiece key={piece.id} piece={piece} originX={minX} originY={minY} />)}</svg></section>;
+};
+const OverviewPiece = ({ piece, originX, originY }: { piece: Placement; originX: number; originY: number }) => { const x = piece.x - originX, y = piece.y - originY, body = /back|front|bodice|skirt/i.test(piece.name), sleeve = /sleeve/i.test(piece.name), trim = /collar|cuff|pocket|waistband|fly/i.test(piece.name); const path = body ? 'M4,0 L96,0 L100,84 Q82,100 50,96 Q18,100 0,84 Z' : sleeve ? 'M7,100 L0,28 Q15,0 43,10 L70,0 Q92,18 100,36 L91,100 Z' : trim ? 'M2,12 Q50,0 98,12 L94,88 Q50,100 6,88 Z' : 'M2,2 L98,2 L98,98 L2,98 Z'; const label = Math.min(piece.width, piece.height) >= 24 ? readablePieceName(piece.name) : getPieceCode(piece.name); return <g transform={`translate(${x} ${y}) scale(${piece.width / 100} ${piece.height / 100})`}><title>{`${piece.name} · ${piece.width} × ${piece.height} cm · ${piece.rotated ? '90° rotation' : '0° rotation'}`}</title><path d={path} fill={piece.color} stroke="#18395c" strokeWidth="1.3" /><text x="50" y="49" textAnchor="middle" dominantBaseline="middle" fontSize={label.length > 6 ? '11' : '16'} fontWeight="800" fill="#08213f">{label}</text></g> };
+const readablePieceName = (name: string) => name.includes('Front Left') ? 'FRONT L' : name.includes('Front Right') ? 'FRONT R' : name.includes('Back') ? 'BACK' : name.includes('Sleeve') ? 'SLEEVE' : name.includes('Collar') ? 'COLLAR' : name.includes('Cuff') ? 'CUFF' : name.includes('Pocket') ? 'POCKET' : getPieceCode(name);
+const PatternPiece = ({ piece, yScale }: { piece: Placement; yScale: number }) => { const x = piece.x, y = piece.y * yScale, w = piece.width, h = piece.height * yScale, body = /back|front|bodice|skirt/i.test(piece.name), sleeve = /sleeve/i.test(piece.name), trim = /collar|cuff|pocket|waistband|fly/i.test(piece.name); const path = body ? 'M4,0 L96,0 L100,84 Q82,100 50,96 Q18,100 0,84 Z' : sleeve ? 'M7,100 L0,28 Q15,0 43,10 L70,0 Q92,18 100,36 L91,100 Z' : trim ? 'M2,12 Q50,0 98,12 L94,88 Q50,100 6,88 Z' : 'M2,2 L98,2 L98,98 L2,98 Z'; return <g transform={`translate(${x} ${y}) scale(${w / 100} ${h / 100})`}><title>{`${piece.name} · ${piece.garmentNumber}\n${piece.width} × ${piece.height} cm\nRotation: ${piece.rotated ? '90°' : '0°'}\nX ${piece.x.toFixed(1)}, Y ${piece.y.toFixed(1)}`}</title><path d={path} fill={piece.color} stroke="#18395c" strokeWidth={Math.max(1.1, 100 / Math.max(w, h) * 1.2)} /><text x="50" y="48" textAnchor="middle" dominantBaseline="middle" fontSize="18" fontWeight="800" fill="#08213f" transform={piece.rotated ? 'rotate(90 50 50)' : undefined}>{getPieceCode(piece.name)}</text><text x="50" y="68" textAnchor="middle" fontSize="11" fontWeight="700" fill="#08213f">#{piece.garmentNumber}</text></g> };
+const MarkerModal = ({ input, result, close }: { input: OptimizerInput; result: StrategyResult; close: () => void }) => { const [scale, setScale] = useState(1); return <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-6"><div className="flex max-h-full w-full max-w-6xl flex-col rounded-2xl bg-white p-5 shadow-2xl"><div className="mb-4 flex items-center justify-between"><div><h2 className="text-xl font-bold">Complete Cutting Layout</h2><p className="text-sm text-slate-500">Hover a pattern piece to inspect its garment number, dimensions, rotation, and position.</p></div><div className="flex items-center gap-2"><button onClick={() => setScale((value) => Math.max(.7, value - .2))} className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-bold">−</button><span className="text-xs font-bold text-slate-500">{Math.round(scale * 100)}%</span><button onClick={() => setScale((value) => Math.min(1.8, value + .2))} className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-bold">+</button><button onClick={close} className="rounded-lg border border-slate-300 p-2"><X className="h-5 w-5" /></button></div></div><div className="overflow-auto rounded-xl bg-slate-100 p-5"><div style={{ width: `${scale * 100}%`, minWidth: `${scale * 760}px` }}><Marker input={input} result={result} full /></div></div></div></div> };
 export default CuttingLayouts;
