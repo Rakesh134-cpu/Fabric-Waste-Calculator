@@ -72,7 +72,7 @@ function makeTrimMaterial(texture) {
   });
 }
 
-function TexturedShirt({ fabricUrl }) {
+function TexturedShirt({ fabricUrl, fabricColor }) {
   const [texture, setTexture] = useState(null);
   const geometries = useMemo(() => ({
     body: createBodyGeometry(),
@@ -124,12 +124,12 @@ function TexturedShirt({ fabricUrl }) {
   }, [geometries]);
 
   const fabricMaterial = useMemo(() => new THREE.MeshStandardMaterial({
-    color: texture ? '#ffffff' : DEFAULT_BLUE,
+    color: texture ? '#ffffff' : (fabricColor || DEFAULT_BLUE),
     map: texture,
     roughness: 0.88,
     metalness: 0.02,
     side: THREE.DoubleSide,
-  }), [texture]);
+  }), [texture, fabricColor]);
   const trimMaterial = useMemo(() => makeTrimMaterial(texture), [texture]);
   const buttonMaterial = useMemo(() => new THREE.MeshPhysicalMaterial({ color: '#d7c39b', roughness: 0.3, clearcoat: 0.35 }), []);
 
@@ -156,9 +156,9 @@ function TexturedShirt({ fabricUrl }) {
   );
 }
 
-function SimpleGarment({ garmentType, fabricUrl }) {
+function SimpleGarment({ garmentType, fabricUrl, fabricColor }) {
   const [texture, setTexture] = useState(null);
-  const material = useMemo(() => new THREE.MeshStandardMaterial({ color: texture ? '#ffffff' : DEFAULT_BLUE, map: texture, roughness: 0.86, metalness: 0.02 }), [texture]);
+  const material = useMemo(() => new THREE.MeshStandardMaterial({ color: texture ? '#ffffff' : (fabricColor || DEFAULT_BLUE), map: texture, roughness: 0.86, metalness: 0.02 }), [texture, fabricColor]);
   const trim = useMemo(() => new THREE.MeshStandardMaterial({ color: texture ? '#ffffff' : '#3e5b79', map: texture, roughness: 0.72, metalness: 0.02 }), [texture]);
   const geometries = useMemo(() => {
     if (garmentType === 'bag') return { body: new THREE.BoxGeometry(2.5, 2.1, 0.72), handle: new THREE.TorusGeometry(0.72, 0.09, 12, 32, Math.PI) };
@@ -221,14 +221,17 @@ function CameraController({ view, resetToken, controlsRef }) {
   return null;
 }
 
-export default function Garment3DViewer({ garmentType = 'shirt', fabricUrl = null }) {
+/**
+ * @param {{ garmentType?: string, fabricUrl?: string | null, fabricColor?: string | null }} props
+ */
+export default function Garment3DViewer({ garmentType = 'shirt', fabricUrl = null, fabricColor = null }) {
   const normalizedGarment = String(garmentType).toLowerCase().includes('pant') ? 'pants' : String(garmentType).toLowerCase().includes('short') ? 'shorts' : String(garmentType).toLowerCase().includes('dress') ? 'dress' : String(garmentType).toLowerCase().includes('bag') ? 'bag' : 'shirt';
   const [view, setView] = useState('front');
   const [resetToken, setResetToken] = useState(0);
   const controlsRef = useRef(null);
 
   return (
-    <div className="w-full overflow-hidden rounded-2xl border border-slate-700 bg-[#101b2b] shadow-2xl">
+    <div className="flex h-full w-full flex-col overflow-hidden rounded-2xl border border-slate-700 bg-[#101b2b] shadow-2xl">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-700 bg-[#0d1726] px-4 py-3">
         <div><div className="text-[10px] font-bold uppercase tracking-[0.2em] text-cyan-300">3D Preview</div><div className="text-lg font-semibold capitalize text-white">{normalizedGarment === 'pants' ? 'Pants' : normalizedGarment === 'shorts' ? 'Shorts' : normalizedGarment === 'dress' ? 'Dress' : normalizedGarment === 'bag' ? 'Bag' : 'Long-sleeve shirt'}</div></div>
         <div className="flex items-center gap-1 rounded-lg border border-slate-700 bg-slate-950 p-1">
@@ -236,7 +239,7 @@ export default function Garment3DViewer({ garmentType = 'shirt', fabricUrl = nul
           <button type="button" onClick={() => { setView('front'); setResetToken((value) => value + 1); }} className="rounded-md px-3 py-1.5 text-xs font-semibold text-slate-400 hover:text-white">Reset</button>
         </div>
       </div>
-      <div className="relative h-[720px] min-h-[620px] w-full touch-none bg-[radial-gradient(circle_at_50%_35%,#263b52_0%,#101a2a_48%,#09111d_100%)] sm:h-[780px]">
+      <div className="relative min-h-[650px] w-full flex-1 touch-none bg-[radial-gradient(circle_at_50%_35%,#263b52_0%,#101a2a_48%,#09111d_100%)]">
         <Canvas shadows camera={{ position: VIEW_POSITIONS.front, fov: 32 }} dpr={[1, 2]} gl={{ antialias: true, powerPreference: 'high-performance' }}>
           <color attach="background" args={['#101a2a']} />
           <hemisphereLight intensity={1.5} color="#d8e9ff" groundColor="#101827" />
@@ -244,7 +247,7 @@ export default function Garment3DViewer({ garmentType = 'shirt', fabricUrl = nul
           <pointLight position={[-3, 1, 2]} intensity={1.8} color="#9dc9ff" />
           <pointLight position={[0, 2, -3]} intensity={2.2} color="#7dd3fc" />
           <CameraController view={view} resetToken={resetToken} controlsRef={controlsRef} />
-          {normalizedGarment === 'shirt' ? <TexturedShirt fabricUrl={fabricUrl} /> : <SimpleGarment garmentType={normalizedGarment} fabricUrl={fabricUrl} />}
+          {normalizedGarment === 'shirt' ? <TexturedShirt fabricUrl={fabricUrl} fabricColor={fabricColor} /> : <SimpleGarment garmentType={normalizedGarment} fabricUrl={fabricUrl} fabricColor={fabricColor} />}
           <ContactShadows position={[0, -1.74, 0]} opacity={0.42} scale={4.5} blur={2.6} far={4} />
           <OrbitControls ref={controlsRef} enableRotate enableZoom enablePan={false} zoomSpeed={0.85} rotateSpeed={0.65} minDistance={2.7} maxDistance={8.5} enableDamping dampingFactor={0.08} target={[0, 0.05, 0]} />
         </Canvas>

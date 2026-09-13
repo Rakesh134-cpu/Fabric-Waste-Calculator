@@ -46,20 +46,19 @@ const Signup: React.FC = () => {
   };
 
   return (
-    <div className="relative min-h-screen flex items-center justify-center overflow-hidden bg-slate-950 px-4 py-12 text-slate-100">
-      {/* Background ambient lighting */}
-      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-teal-500/10 rounded-full blur-3xl pointer-events-none" />
+    <div 
+      className="relative min-h-screen flex items-center justify-center px-4 py-12 text-slate-100 bg-cover bg-center bg-no-repeat"
+      style={{ backgroundImage: `url('/assets/images/auth-bg.png')` }}
+    >
+      <div className="absolute inset-0 bg-black/20 pointer-events-none" />
 
-      <div className="relative w-full max-w-md bg-slate-900/80 backdrop-blur-xl border border-slate-800 rounded-3xl p-8 shadow-2xl">
+      <div className="relative w-full max-w-md bg-[#2d3748] border border-slate-700/50 rounded-[1.25rem] p-8 shadow-2xl">
         <div className="flex flex-col items-center text-center mb-8">
-          <div className="h-14 w-14 rounded-2xl bg-gradient-to-tr from-emerald-500 to-teal-400 p-0.5 shadow-lg shadow-emerald-500/20 mb-4">
-            <div className="h-full w-full bg-slate-950 rounded-[14px] flex items-center justify-center">
-              <Scissors className="h-7 w-7 text-emerald-400 transform -rotate-45" />
-            </div>
+          <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-green-400 to-green-600 shadow-glow-green mb-4 flex items-center justify-center">
+            <Scissors className="h-7 w-7 text-white transform -rotate-45" />
           </div>
           <h1 className="text-2xl font-bold tracking-tight text-white flex items-center gap-2">
-            Join EcoCut AI <Leaf className="h-5 w-5 text-emerald-400 inline" />
+            Join EcoCut AI <Leaf className="h-5 w-5 text-green-400 inline" />
           </h1>
           <p className="text-sm text-slate-400 mt-1">
             Start saving fabric, reducing waste, and boosting profits today
@@ -79,7 +78,9 @@ const Signup: React.FC = () => {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Jane Doe"
-                className="w-full bg-slate-950/60 border border-slate-800 rounded-xl py-2.5 pl-10 pr-4 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition"
+                className="w-full pl-10 pr-4 py-2.5 bg-[#e2e8f0] border border-transparent rounded-xl
+                  text-slate-900 placeholder-slate-500 focus:outline-none focus:ring-2
+                  focus:ring-green-500 transition font-medium"
               />
             </div>
           </div>
@@ -96,7 +97,9 @@ const Signup: React.FC = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="jane@apparel-factory.com"
-                className="w-full bg-slate-950/60 border border-slate-800 rounded-xl py-2.5 pl-10 pr-4 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition"
+                className="w-full pl-10 pr-4 py-2.5 bg-[#e2e8f0] border border-transparent rounded-xl
+                  text-slate-900 placeholder-slate-500 focus:outline-none focus:ring-2
+                  focus:ring-green-500 transition font-medium"
               />
             </div>
           </div>
@@ -111,8 +114,10 @@ const Signup: React.FC = () => {
                 type="text"
                 value={company}
                 onChange={(e) => setCompany(e.target.value)}
-                placeholder="EcoGarments Co."
-                className="w-full bg-slate-950/60 border border-slate-800 rounded-xl py-2.5 pl-10 pr-4 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition"
+                placeholder="Acme Wear"
+                className="w-full pl-10 pr-4 py-2.5 bg-[#e2e8f0] border border-transparent rounded-xl
+                  text-slate-900 placeholder-slate-500 focus:outline-none focus:ring-2
+                  focus:ring-green-500 transition font-medium"
               />
             </div>
           </div>
@@ -128,8 +133,10 @@ const Signup: React.FC = () => {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="At least 6 characters"
-                className="w-full bg-slate-950/60 border border-slate-800 rounded-xl py-2.5 pl-10 pr-4 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition"
+                placeholder="••••••••"
+                className="w-full pl-10 pr-4 py-2.5 bg-[#e2e8f0] border border-transparent rounded-xl
+                  text-slate-900 placeholder-slate-500 focus:outline-none focus:ring-2
+                  focus:ring-green-500 transition font-medium"
               />
             </div>
           </div>
@@ -137,10 +144,10 @@ const Signup: React.FC = () => {
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full mt-2 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-semibold py-3 px-4 rounded-xl shadow-lg shadow-emerald-500/25 flex items-center justify-center gap-2 transition duration-200 disabled:opacity-50"
+            className="w-full flex items-center justify-center gap-2 mt-2 py-3 px-6 bg-gradient-to-r from-green-500 to-green-600 text-white font-semibold rounded-xl hover:from-green-600 hover:to-green-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-glow-green"
           >
             {isLoading ? (
-              <div className="h-5 w-5 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" />
+              <div className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
             ) : (
               <>
                 <span>Create Free Account</span>

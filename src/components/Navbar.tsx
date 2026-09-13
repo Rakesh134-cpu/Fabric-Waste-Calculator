@@ -99,6 +99,12 @@ const Navbar: React.FC = () => {
           <LogOut className="h-4 w-4" />
           <span>Log out</span>
         </button>
+
+        {/* Sidebar Brand Tagline */}
+        <div className="mt-4 pt-3 border-t border-slate-700/50 text-center">
+          <div className="text-[11px] font-semibold text-emerald-400/90 tracking-wide uppercase">Sustainable Fashion</div>
+          <div className="text-[10px] text-slate-400 mt-0.5">Smarter Tomorrow</div>
+        </div>
       </div>
     </aside>
   );

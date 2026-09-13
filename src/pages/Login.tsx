@@ -31,12 +31,12 @@ const Login: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-navy-950 via-navy-800 to-green-900 px-4">
-      {/* Animated background particles */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute w-72 h-72 bg-green-500/10 rounded-full blur-3xl -top-20 -left-20 animate-pulse-slow" />
-        <div className="absolute w-96 h-96 bg-blue-500/10 rounded-full blur-3xl -bottom-32 -right-32 animate-pulse-slow" />
-      </div>
+    <div 
+      className="min-h-screen flex items-center justify-center px-4 bg-cover bg-center bg-no-repeat relative"
+      style={{ backgroundImage: `url('/assets/images/auth-bg.png')` }}
+    >
+      {/* Dark overlay to ensure form readability if needed, though pic 2 shows it clear */}
+      <div className="absolute inset-0 bg-black/20 pointer-events-none" />
 
       <div className="relative w-full max-w-md">
         {/* Logo */}
@@ -52,36 +52,36 @@ const Login: React.FC = () => {
         </div>
 
         {/* Card */}
-        <div className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-2xl p-8 shadow-2xl">
-          <h2 className="text-2xl font-semibold text-white mb-6">Sign In</h2>
+        <div className="bg-[#2d3748] border border-slate-700/50 rounded-[1.25rem] p-8 shadow-2xl">
+          <h2 className="text-xl font-bold text-white mb-6">Sign In</h2>
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label htmlFor="login-email" className="block text-sm font-medium text-gray-300 mb-1">
+              <label htmlFor="login-email" className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
                 Email
               </label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
                 <input
                   id="login-email"
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
-                  placeholder="you@company.com"
-                  className="w-full pl-11 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl
-                    text-white placeholder-gray-500 focus:outline-none focus:ring-2
-                    focus:ring-green-400/50 focus:border-green-400/50 transition"
+                  placeholder="rakeshkumarraju070819@gmail.com"
+                  className="w-full pl-10 pr-4 py-2.5 bg-[#e2e8f0] border border-transparent rounded-xl
+                    text-slate-900 placeholder-slate-500 focus:outline-none focus:ring-2
+                    focus:ring-green-500 transition font-medium"
                 />
               </div>
             </div>
 
             <div>
-              <label htmlFor="login-password" className="block text-sm font-medium text-gray-300 mb-1">
+              <label htmlFor="login-password" className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
                 Password
               </label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
                 <input
                   id="login-password"
                   type="password"
@@ -89,9 +89,9 @@ const Login: React.FC = () => {
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   placeholder="••••••••"
-                  className="w-full pl-11 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl
-                    text-white placeholder-gray-500 focus:outline-none focus:ring-2
-                    focus:ring-green-400/50 focus:border-green-400/50 transition"
+                  className="w-full pl-10 pr-4 py-2.5 bg-[#e2e8f0] border border-transparent rounded-xl
+                    text-slate-900 placeholder-slate-500 focus:outline-none focus:ring-2
+                    focus:ring-green-500 transition font-medium"
                 />
               </div>
             </div>
